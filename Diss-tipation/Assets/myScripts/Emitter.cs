@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -18,24 +19,30 @@ namespace fluidClasses
         [SerializeField] float radius = 60.0f;
         [SerializeField] internal Vector3 position = Vector3.down; // to be changed
         [SerializeField] internal Vector3 endPosition = Vector3.zero; // to be changed
+        [SerializeField] Text particleCountText;
 
         internal int particleCount = 0;
         Vector3 randomVector;
         
         void Awake()
         {
+            // assign the fluid pointer
             fluid = gameObject.transform.parent.GetComponent<FluidMain>();
         }
 
         void Update()
         {
+            // if emit input
             if (emit)
             {
+                // if max particles is not reached
                 if (particleCount < maxParticles)
                 {
+                    // emit a particle
                     emitParticle();
                 }
             }
+            particleCountText.text = particleCount + "particles";
         }
 
         // call this to start emitting particles
@@ -69,6 +76,7 @@ namespace fluidClasses
             if (particleCount <= 0)
                 return;
 
+            // remove the correct particle from the list
             for (int i = 0; i < particleCount; ++i)
             {
                 if (particlesList[i].ID == particle.ID)

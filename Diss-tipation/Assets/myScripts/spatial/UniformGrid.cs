@@ -20,11 +20,14 @@ namespace fluidClasses
 
         public void init(Vector3 force, Vector3 initialPosition, float _minNodeSize, float _resolution, float _height)
         {
+            // initialise array and 
             nodes = new GameObject[(int)_resolution, (int)_height, (int)_resolution];
             minNodeSize = _minNodeSize;
             resolution = _resolution;
             initialPos = initialPosition;
             height = _height;
+
+            // create the grid
             createGrid(_resolution, _minNodeSize, initialPosition, force, height);
         }
 
@@ -36,6 +39,7 @@ namespace fluidClasses
                 {
                     for (int z = 0; z < resolution; ++z)
                     {
+                        // create each node and assign variables
                         GameObject nodeOBJ = new GameObject("Node " + x + ", " + y + ", " + z);
                         UniformNode node = nodeOBJ.AddComponent<UniformNode>();
                         Vector3 center = new Vector3(x * minNodeSize, y * minNodeSize, z * minNodeSize);
@@ -47,26 +51,29 @@ namespace fluidClasses
                         node.index = new Vector3(x, y, z);
                         nodeOBJ.transform.parent = gameObject.transform;
 
-
+                        // add the node to the node array
                         nodes[x, y, z] = nodeOBJ;
                     }
                 }
             }
+            // assign each nodes neighbours
             createGridNeighbours();
         }
 
         void createGridNeighbours()
         {
-            //value = data[ i * height * depth + j * depth + k ];
+            // exterior nodes are ignored for this, as they won't have every potential neighbour
             for (int x = 1; x < resolution - 1; ++x)
             {
                 for (int y = 1; y < height - 1; ++y)
                 {
                     for (int z = 1; z < resolution - 1; ++z)
                     {
+                        // get the node
                         UniformNode node = nodes[x, y, z].GetComponent<UniformNode>();
                         Vector3 ind = node.index;
                         
+                        // assign each neighbour manually
                         node.surroundingBounds[0] = nodes[x + 1, y + 1, z + 1].GetComponent<UniformNode>();
                         node.surroundingBounds[1] = nodes[x + 1, y + 1, z].GetComponent<UniformNode>();
                         node.surroundingBounds[2] = nodes[x + 1, y, z].GetComponent<UniformNode>();
@@ -101,19 +108,25 @@ namespace fluidClasses
 
         public void addParticleToGrid(ParticleClass particle, bool remove)
         {
+            // if the particle has been added before, it needs to be removed
             if (remove)
             {
+                // call the remove particle function
                 removeParticle(particle);
                 Vector3 ID = particle.gridID;
 
+                // get the surrounding nodes
                 UniformNode[] surrounding = nodes[(int)ID.x, (int)ID.y, (int)ID.z].GetComponent<UniformNode>().surroundingBounds;
 
                 for (int i = 0; i < surrounding.Length; ++i)
                 {
+                    // if the surrounding node exists
                     if (surrounding[i] != null)
                     {
+                        // and the node contains the particle position
                         if (surrounding[i].bounds.Contains(particle.transform.position))
                         {
+                            // add the particle to the node
                             surrounding[i].objectsHeld.Add(particle);
                             particle.gridID = surrounding[i].index;
                             particle.lastGridPos = surrounding[i].bounds.center;
@@ -123,23 +136,27 @@ namespace fluidClasses
                     }
                 }
             }
-            else
+            else // if its the first time the particle is added
             {
+                // iterate through all nodes to find the correct node (inefficient and needs improving)
                 for (int x = 0; x < resolution; ++x)
                 {
                     for (int y = 0; y < height; ++y)
                     {
                         for (int z = 0; z < resolution; ++z)
                         {
+                            // get the node
                             UniformNode node = nodes[x, y, z].GetComponent<UniformNode>();
-                            // so inefficient soz
+                            // chcek if the particle is contained
                             if (node.bounds.Contains(particle.transform.position))
                             {
+                                // add the particle
                                 node.objectsHeld.Add(particle);
                                 particle.gridID = node.index;
                                 particle.lastGridPos = node.bounds.center;
                                 particle.currentNode = node;
 
+                                // set loop variables to max to break out the loop
                                 x = (int)resolution;
                                 y = (int)height;
                                 z = (int)resolution;
@@ -152,18 +169,21 @@ namespace fluidClasses
 
         public void removeParticle(ParticleClass particle)
         {
+            // get particle node ID then remove it
             Vector3 ID = particle.GetComponent<ParticleClass>().gridID;
             nodes[(int)ID.x, (int)ID.y, (int)ID.z].GetComponent<UniformNode>().objectsHeld.Remove(particle);
         }
 
         public void getNeighbours(ref int[] neighbours, ParticleClass particle, float smoothingDistance, float maxInteractions, float cellspace2Sq)
         {
+            //find particle node ID
             Vector3 ID = particle.gridID;
-
+            // find the neighbours from that node (plus it's surrounding nodes)
             nodes[(int)ID.x, (int)ID.y, (int)ID.z].GetComponent<UniformNode>().getNeighbours(ref neighbours, particle, smoothingDistance, maxInteractions, cellspace2Sq);
 
         }
 
+        // remove the grid
         void clearGrid()
         {
             for (int x = 0; x < resolution; ++x)
@@ -178,13 +198,7 @@ namespace fluidClasses
             }
         }
 
-
-        // Update is called once per frame
-        void Update()
-        {
-
-        }
-
+        // used to visualise the bounding boxes
         public void drawBounds()
         {
             for (int x = 0; x < resolution; ++x)

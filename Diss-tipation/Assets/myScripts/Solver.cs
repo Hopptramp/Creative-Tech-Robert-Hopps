@@ -133,19 +133,21 @@ namespace fluidClasses
         public void preSolve(ref timeStep timestep)
         {
             ParticleClass particle;
-            int particlesRemoved = 0;
 
             for (int i = 0; i < fluid._particles.Count; ++i)
             {
+                // get the particle
                 particle = fluid._particles[i].GetComponent<ParticleClass>();
 
-                if (particle.currentNode.surroundingBounds[0] == null)
-                {
-                    //fluid.removeParticle(particle, particle.ID);
-                    particle.isDead = true;
-                    continue;
-                }
+                // if the particle leaves the uniform grid, remove it
+                //if (fluid.useUniform && particle.currentNode.surroundingBounds[0] == null)
+                //{
+                //    //fluid.removeParticle(particle, particle.ID);
+                //    //particle.isDead = true;
+                //    continue;
+                //}
 
+                // if the particle moves far enough away from the player, remove it
                 if (particle.emitter.maxParticleDistance < Mathf.Infinity)
                 {
                     if (Vector3.Distance(particle.position, GameObject.Find("Player").transform.position) > particle.emitter.maxParticleDistance)
@@ -157,24 +159,28 @@ namespace fluidClasses
                     }
                 }
 
+                // if using lifetime, remove the particle after a certain time
                 if (particle.timed)
                 {
                     particle.particleLife -= timestep.dt;
 
                     if (particle.particleLife <= 0)
-                    {
-
+                    { 
                         //fluid.removeParticle(particle, particle.ID);
                         particle.isDead = true;
                         continue;
                     }
                 }
 
+                // if using uniform grid, update the particle's node
                 if (fluid.useUniform)
                     fluid.updateGridLocation(particle.gameObject);
 
+                // update particle list
                 fluid._particles[i] = particle.gameObject;
             }
+
+            // remove the particles marked for dead
             for (int i = 0; i < fluid._particles.Count; ++i)
             {
                 particle = fluid._particles[i].GetComponent<ParticleClass>();
@@ -188,7 +194,7 @@ namespace fluidClasses
 
         public void Solve(timeStep timestep)
         {
-
+            // calls functions
             calculateDensityandPressure();
             calculateForces(ref timestep);
         }
@@ -281,6 +287,7 @@ namespace fluidClasses
 
         public void integrateVelocities(ref timeStep timestep, ref Vector3 gravity)
         {
+            // create local variables
             Vector3 acceleration;
             Vector3 temp;
             float distSqMag;
@@ -290,11 +297,12 @@ namespace fluidClasses
 
             for (int i = 0; i < fluid._particles.Count; ++i)
             {
+                // get particle
                 particle = fluid._particles[i].GetComponent<ParticleClass>();
 
+                // assign variables
                 acceleration = particle.force * (1.0f / particle.mass);
                 acceleration += gravity;
-
                 temp = timestep.dt2_iter * acceleration;
                 particle.velocity += temp;
                 particle.velocity *= Mathf.Clamp01(1.0f - timestep.dt_iter * fluid.damping);
@@ -307,21 +315,29 @@ namespace fluidClasses
 
                 for (int j = 0; j < particle.neighbours.Length; ++j)
                 {
+                    // if the neighbour is null
                     if (particle.neighbours[j] == -1)
                         continue;
+
+                    // get the neighbour particle matching the ID
                     neighbour = fluid._particles[particle.neighbours[j]].GetComponent<ParticleClass>();
 
                     if (particle.neighbours[j] != 0)
                     {
+                        // find the distance between the particles
                         temp = neighbour.position - particle.position;
                         distSqMag = temp.sqrMagnitude;
 
+                        // if in range
                         if (distSqMag < minDistance)
                         {
+                            // if above minimum distance
                             if (distSqMag > Vector3.kEpsilon)
                             {
+                                // create force
                                 distMag = Mathf.Sqrt(distSqMag);
                                 temp *= (0.5f * (distMag - minDistance) / distMag);
+                                // apply force
                                 neighbour.position -= temp;
                                 neighbour.velocity -= temp;
                                 particle.position += temp;
@@ -329,8 +345,9 @@ namespace fluidClasses
                             }
                             else
                             {
+                                // create own force variable
                                 distMag = 0.5f * minDistance;
-
+                                // apply forces
                                 neighbour.position.y -= distMag;
                                 neighbour.velocity.y -= distMag;
                                 particle.position.y += distMag;

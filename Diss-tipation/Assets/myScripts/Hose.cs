@@ -22,6 +22,7 @@ namespace fluidClasses
         // Update is called once per frame
         void Update()
         {
+            // set up the input for the player
             float horizontal = Input.GetAxis("Horizontal");
             float vertical = Input.GetAxis("Vertical");
 

@@ -6,28 +6,35 @@ namespace fluidClasses
 
     public class ParticleClass : MonoBehaviour
     {
-        // physics properties
+        // particle properties
+
+        // floats
         internal float mass;
         internal float density;
         internal float smoothingDistance;
         internal float pressure;
         internal float particleLife;
 
+        // vector3
         internal Vector3 force;
         internal Vector3 position;
         internal Vector3 velocity;
         internal Vector3 gridID;
         internal Vector3 lastGridPos;
-        internal bool isMovedNode;
 
-        internal Emitter emitter;
-        internal UniformNode currentNode;
+        // ints
         internal int[] neighbours;
         internal int ID;
-        internal bool isDead;
-            
 
+        //bools
+        internal bool isDead;
+        internal bool isMovedNode;
         internal bool timed;
+
+        // pointers
+        internal Emitter emitter;
+        internal UniformNode currentNode;
+       
 
         
         //add force to the particle
@@ -54,8 +61,8 @@ namespace fluidClasses
             position = _position;
             velocity = Vector3.zero;
             force = _force;
-            // assign floats
             
+            // assign floats          
             density = emitter.fluid.initialDensity;
             mass = emitter.fluid.particleMass;
             smoothingDistance = emitter.fluid.smoothingDistance;
