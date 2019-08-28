@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace fluidClasses
 {
-    public struct timeStep
+    public struct TimeStep
     {
         public readonly float iter;
         public readonly float dt;
@@ -13,7 +13,7 @@ namespace fluidClasses
         public readonly float INViter;
         public readonly float dt_iter;
 
-        public timeStep(float deltaTime, float iterations)
+        public TimeStep(float deltaTime, float iterations)
         {
             iter = iterations;
             INViter = 1 / iter;

@@ -6,6 +6,7 @@ namespace fluidClasses
     public class Solver : MonoBehaviour
     {
         FluidMain fluid;
+        public Transform origin {get;set;}
 
         float cellspace;
         float cellspace2;
@@ -22,6 +23,7 @@ namespace fluidClasses
         public void init(FluidMain _fluid)
         {
             fluid = _fluid;
+            //origin = _player;
 
             setCellSpace(fluid);
         }
@@ -40,12 +42,9 @@ namespace fluidClasses
                 GameObject kernels = new GameObject();
                 kernels.name = "Kernels";
                 kernels.transform.parent = transform;
-                kernels.AddComponent<poly6SmoothingKernel>();
-                densityKernel = kernels.GetComponent<poly6SmoothingKernel>();
-                kernels.AddComponent<spikySmoothingKernel>();
-                pressureKernel = kernels.GetComponent<spikySmoothingKernel>();
-                kernels.AddComponent<viscositySmoothingKernel>();
-                viscosityKernel = kernels.GetComponent<viscositySmoothingKernel>();
+                densityKernel = kernels.AddComponent<poly6SmoothingKernel>();
+                pressureKernel = kernels.AddComponent<spikySmoothingKernel>();
+                viscosityKernel = kernels.AddComponent<viscositySmoothingKernel>();
             }
             // initialise the kernels
             densityKernel.initialise(fluid.smoothingDistance);
@@ -60,9 +59,9 @@ namespace fluidClasses
 
             for (int i = 0; i < fluid._particles.Count; ++i)
             {
-                particle = fluid._particles[i].GetComponent<ParticleClass>();
+                particle = fluid._particles[i];
                 particle.force = Vector3.zero;
-                fluid._particles[i] = particle.gameObject;
+                fluid._particles[i] = particle;
             }
         }
 
@@ -77,7 +76,7 @@ namespace fluidClasses
             }
             for (int i = 0; i < fluid._particles.Count; ++i)
             {
-                queryParticle = fluid._particles[i].GetComponent<ParticleClass>();
+                queryParticle = fluid._particles[i];
 
                 if (queryParticle.isMovedNode)
                 {
@@ -91,7 +90,7 @@ namespace fluidClasses
                     grid.getNeighbours(ref queryParticle.neighbours, queryParticle, fluid.smoothingDistance, fluid.maxInteractions, cellspace2Sq);
 
                     queryParticle.isMovedNode = false;
-                    fluid._particles[i] = queryParticle.gameObject;
+                    fluid._particles[i] = queryParticle;
                 }
 
 
@@ -102,7 +101,7 @@ namespace fluidClasses
                     {
                         if (j != i)
                         {
-                            if ((queryParticle.position - fluid._particles[j].GetComponent<ParticleClass>().position).sqrMagnitude <= cellspace2Sq)
+                            if ((queryParticle.position - fluid._particles[j].position).sqrMagnitude <= cellspace2Sq)
                             {
                                 queryParticle.neighbours[k++] = j;
                             }
@@ -125,39 +124,30 @@ namespace fluidClasses
                 //        queryParticle.neighbours[i] = neighbours[j].ID;
                 //    }
                 //}
-                fluid._particles[i] = queryParticle.gameObject;
+                fluid._particles[i] = queryParticle;
             }
         }
 
         // check max distance/particlelife/enforce minimum distances
-        public void preSolve(ref timeStep timestep)
+        public void PreSolve(ref TimeStep timestep)
         {
             ParticleClass particle;
 
             for (int i = 0; i < fluid._particles.Count; ++i)
             {
                 // get the particle
-                particle = fluid._particles[i].GetComponent<ParticleClass>();
-
-                // if the particle leaves the uniform grid, remove it
-                //if (fluid.useUniform && particle.currentNode.surroundingBounds[0] == null)
-                //{
-                //    //fluid.removeParticle(particle, particle.ID);
-                //    //particle.isDead = true;
-                //    continue;
-                //}
+                particle = fluid._particles[i];
 
                 // if the particle moves far enough away from the player, remove it
-                if (particle.emitter.maxParticleDistance < Mathf.Infinity)
-                {
-                    if (Vector3.Distance(particle.position, GameObject.Find("Player").transform.position) > particle.emitter.maxParticleDistance)
-                    {
-
-                        //fluid.removeParticle(particle, particle.ID);
-                        particle.isDead = true;
-                        continue;
-                    }
-                }
+                //if (particle.emitter.maxParticleDistance < Mathf.Infinity)
+                //{
+                //    if (Vector3.Distance(particle.position, origin.position) > particle.emitter.maxParticleDistance)
+                //    {
+                //        //fluid.removeParticle(particle, particle.ID);
+                //        particle.isDead = true;
+                //        continue;
+                //    }
+                //}
 
                 // if using lifetime, remove the particle after a certain time
                 if (particle.timed)
@@ -177,13 +167,13 @@ namespace fluidClasses
                     fluid.updateGridLocation(particle.gameObject);
 
                 // update particle list
-                fluid._particles[i] = particle.gameObject;
+                fluid._particles[i] = particle;
             }
 
             // remove the particles marked for dead
             for (int i = 0; i < fluid._particles.Count; ++i)
             {
-                particle = fluid._particles[i].GetComponent<ParticleClass>();
+                particle = fluid._particles[i];
 
                 if(particle.isDead)
                 {
@@ -192,7 +182,7 @@ namespace fluidClasses
             }
       }
 
-        public void Solve(timeStep timestep)
+        public void Solve(TimeStep timestep)
         {
             // calls functions
             calculateDensityandPressure();
@@ -209,7 +199,7 @@ namespace fluidClasses
             // for each particle
             for (int i = 0; i < fluid._particles.Count; ++i)
             {
-                particle = fluid._particles[i].GetComponent<ParticleClass>();
+                particle = fluid._particles[i];
                 particle.density = 0.0f;
                 // for each of their neighbours
                 for (int j = 0; j < particle.neighbours.Length; ++j)
@@ -218,7 +208,7 @@ namespace fluidClasses
                         continue;
                     if (particle.neighbours[j] == -1)
                         continue;
-                    neighbour = fluid._particles[particle.neighbours[j]].GetComponent<ParticleClass>();
+                    neighbour = fluid._particles[particle.neighbours[j]];
                     // calculate the distance between
                     distance = particle.position - neighbour.position;
                     // add the calculated density onto the particle
@@ -230,11 +220,11 @@ namespace fluidClasses
                 // calculate pressure
                 particle.pressure = fluid.gasConstant * (particle.density * fluid.initialDensity);
                 // apply changes to fluid particles
-                fluid._particles[i] = particle.gameObject;
+                fluid._particles[i] = particle;
             }
         }
 
-        void calculateForces(ref timeStep timestep)
+        void calculateForces(ref TimeStep timestep)
         {
             ParticleClass particle;
             ParticleClass neighbour;
@@ -242,18 +232,18 @@ namespace fluidClasses
             //for each particle
             for (int i = 0; i < fluid._particles.Count; ++i)
             {
-                particle = fluid._particles[i].GetComponent<ParticleClass>();
+                particle = fluid._particles[i];
                 // for each of their neighbours
                 for (int j = 0; j < particle.neighbours.Length; ++j)
                 {
                     if (particle.neighbours[j] == -1)
                         continue;
 
-                    neighbour = fluid._particles[particle.neighbours[j]].GetComponent<ParticleClass>();
+                    neighbour = fluid._particles[particle.neighbours[j]];
 
                     solveSPH(ref particle, ref neighbour);
 
-                    fluid._particles[particle.neighbours[j]] = neighbour.gameObject;
+                    fluid._particles[particle.neighbours[j]] = neighbour;
                 }
             }
         }
@@ -285,7 +275,7 @@ namespace fluidClasses
             neighbour.force -= force;
         }
 
-        public void integrateVelocities(ref timeStep timestep, ref Vector3 gravity)
+        public void integrateVelocities(ref TimeStep timestep, ref Vector3 gravity)
         {
             // create local variables
             Vector3 acceleration;
@@ -298,7 +288,7 @@ namespace fluidClasses
             for (int i = 0; i < fluid._particles.Count; ++i)
             {
                 // get particle
-                particle = fluid._particles[i].GetComponent<ParticleClass>();
+                particle = fluid._particles[i];
 
                 // assign variables
                 acceleration = particle.force * (1.0f / particle.mass);
@@ -320,7 +310,7 @@ namespace fluidClasses
                         continue;
 
                     // get the neighbour particle matching the ID
-                    neighbour = fluid._particles[particle.neighbours[j]].GetComponent<ParticleClass>();
+                    neighbour = fluid._particles[particle.neighbours[j]];
 
                     if (particle.neighbours[j] != 0)
                     {
@@ -355,11 +345,11 @@ namespace fluidClasses
                             }
                         }
                         // apply changes to neighbour
-                        fluid._particles[particle.neighbours[j]] = neighbour.gameObject;
+                        fluid._particles[particle.neighbours[j]] = neighbour;
                     }
                 }
                 //apply changes to particle
-                fluid._particles[i] = particle.gameObject;
+                fluid._particles[i] = particle;
             }
         }
     }

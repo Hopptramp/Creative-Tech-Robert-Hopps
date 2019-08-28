@@ -59,7 +59,8 @@ namespace fluidClasses
                     GameObject go = particleGO;
                     go.layer = fluid.gameObject.layer;
                     go.transform.parent = parentTrans;
-                    go.transform.position = fluid._particles[i].GetComponent<ParticleClass>().position;
+                    go.transform.position = fluid._particles[i].position;
+                    go.transform.localScale = Vector3.one * 0.25f;
 
                     // add all the components
                     SphereCollider collider = go.AddComponent<SphereCollider>();
@@ -90,7 +91,7 @@ namespace fluidClasses
             }
         }
 
-        public void preSolve(timeStep timestep)
+        public void preSolve(TimeStep timestep)
         {
             // prevent function from running without any particles
             if (rigidBodies == null)
@@ -103,9 +104,7 @@ namespace fluidClasses
                 // get the components
                 Rigidbody rigid = rigidBodies[i];
                 SphereCollider collider = sphereColliders[i];
-                GameObject particleGO = fluid._particles[i];
-                ParticleClass particle = particleGO.GetComponent<ParticleClass>();
-
+                
                 if (!rigid)
                     continue;
 
@@ -115,15 +114,12 @@ namespace fluidClasses
                 collider.sharedMaterial = physicsMaterial;
 
                 // update particle position to match rigidbody
-                particle.position = rigid.position;
-                particle.velocity = rigid.velocity * timestep.dt;
-
-                // update fluid particle list
-                fluid._particles[i] = particleGO;
+                fluid._particles[i].position = rigid.position;
+                fluid._particles[i].velocity = rigid.velocity * timestep.dt;
             }
         }
 
-        public void postSolve(timeStep timestep)
+        public void postSolve(TimeStep timestep)
         {
             if (rigidBodies == null)
                 return;
@@ -133,16 +129,15 @@ namespace fluidClasses
             for (int i = 0; i < min; ++i)
             {
                 Rigidbody rigid = rigidBodies[i];
-                ParticleClass particle = fluid._particles[i].GetComponent<ParticleClass>();
-
+                
                 if (!rigid)
                     continue;
-                if (fluid._particles[i].GetComponent<ParticleClass>().ID == -1)
+                if (fluid._particles[i].ID == -1)
                     return;
 
                 // mvoe the rigid body to match the particle
-                rigid.MovePosition(particle.position);
-                rigid.velocity = particle.velocity * timestep.INVdt;
+                rigid.MovePosition(fluid._particles[i].position);
+                rigid.velocity = fluid._particles[i].velocity * timestep.INVdt;
             }
         }
 

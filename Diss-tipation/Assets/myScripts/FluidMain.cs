@@ -7,7 +7,7 @@ namespace fluidClasses
     public class FluidMain : MonoBehaviour
     {
         // particle list
-        internal List<GameObject> _particles = new List<GameObject>();
+        internal List<ParticleClass> _particles = new List<ParticleClass>();
 
         // serialised fields
         [SerializeField] internal float smoothingDistance = 0.38125f;
@@ -37,7 +37,8 @@ namespace fluidClasses
         [SerializeField] float uniformMinNodeSize = 3;
         [SerializeField] float uniformResolution = 15;
         [SerializeField] float uniformHeight = 5;
-        
+
+        Vector3 gravity = new Vector3(0.0f, -0.98f, 0.0f);
 
 
         public void spawnParticle(Emitter _emitter, Vector3 position, Vector3 force)
@@ -97,7 +98,7 @@ namespace fluidClasses
                 }
 
                 // add the particle to the list
-                _particles.Add(particleGO);
+                _particles.Add(particle);
 
                 // initialise the particle
                 particle.intitialise(emitter, ref position, ref force);
@@ -148,7 +149,7 @@ namespace fluidClasses
             }
 
             // remove particle from the gameobject list
-            _particles.Remove(particle.gameObject);
+            _particles.Remove(particle);
             // destroy the particle
             DestroyImmediate(particle.gameObject);
            
@@ -168,8 +169,7 @@ namespace fluidClasses
         void FixedUpdate()
         {
             // create a new timestep + init gravity
-            timeStep timestep = new timeStep(Time.deltaTime, solverIterationCount);
-            Vector3 gravity = new Vector3(0.0f, -0.98f, 0.0f);
+            TimeStep timestep = new TimeStep(Time.deltaTime, solverIterationCount);
 
             // if there are any particles
             if (_particles.Count > 0)
@@ -177,17 +177,8 @@ namespace fluidClasses
                 // presolve
                 rigid.preSolve(timestep);
 
-                // update grid locations for octree 
-                if (useOctree)
-                {
-                    for (int i = 0; i < _particles.Count; ++i)
-                    {
-                        octree.moveParticle(_particles[i].GetComponent<ParticleClass>(), _particles[i].GetComponent<ParticleClass>().position, smoothingDistance, _particles[i].GetComponent<ParticleClass>().ID);
-                    }
-                }
-
                 // solver function (contains SPH method)
-                solver.preSolve(ref timestep);
+                solver.PreSolve(ref timestep);
                 solver.findNeighbours();
                 solver.Solve(timestep);
                 solver.integrateVelocities(ref timestep, ref gravity);
